@@ -17,9 +17,15 @@ iftPoint addPoints(iftPoint a, iftPoint b) {
 
   return c;
 }
+
 float absolute(float a) {
   return a > 0? a: -1 * a;
 }
+
+float max(float a, float b) {
+  return a > b? a : b;
+}
+
 
 iftPoint mulByScalar(iftPoint a, float s) {
   iftPoint c = {a.x * s, a.y * s, a.z * s};
@@ -199,6 +205,23 @@ iftImage *maximum_intesity_projection(iftImage *img, GraphicalContext *gc) {
   return projection;
 }
 
+void change_intesity_interval(iftImage *img, int h) {
+  int min = iftMinimumValue(img);
+  int max = iftMaximumValue(img);
+
+  iftVoxel u = {0, 0, 0};
+
+  for(u.x = 0; u.x < img->xsize; u.x++) {
+    for(u.y = 0; u.y < img->ysize; u.y++) {
+      int p = iftGetVoxelIndex(img,u);
+      int val = img->val[p];
+      float new_val = h*(val - min)/((float)(max - min));
+      img->val[p] = iftRound(new_val);
+    }
+  }
+
+}
+
 int main(int argc, char *argv[]) 
 {
   timer *tstart = NULL;
@@ -206,13 +229,13 @@ int main(int argc, char *argv[])
   
   MemDinInicial = iftMemoryUsed(1);
 
-  if (argc != 6){
+  if (argc != 5){
     iftError("Usage: getslice <...>\n"
 	    "[1] input image .scn \n"
         "[2] the tilt angle alpha \n"
         "[3] is the spin angle beta \n"
-        "[4] is an optional parameter — an .scn object mask \n"
-        "[5] is the output .png image of the maximum intensity projection \n",
+        //"[4] is an optional parameter — an .scn object mask \n"
+        "[4] is the output .png image of the maximum intensity projection \n",
 	     "main");
   }
 
@@ -224,12 +247,15 @@ int main(int argc, char *argv[])
 
   float alpha = atof(argv[2]);
   float beta = atof(argv[3]);
+  int h = 256*256-1;
 
   GraphicalContext *gc = create_graphical_context(img, alpha, beta);
 
   iftImage *projection = maximum_intesity_projection(img, gc);
 
-  iftWriteImageByExt(projection, "teste.pgm");
+  change_intesity_interval(projection, h);
+
+  iftWriteImageByExt(projection, argv[4]);
 
   iftDestroyImage(&img);
 
