@@ -65,24 +65,25 @@ GraphicalContext *create_graphical_context(iftImage *img, float alpha, float bet
     return gc;
 }
 
-void get_slice(GraphicalContext *gc,  iftImage *original_img, iftImage *reslice_img, iftPoint p_0, int slice){
+void get_slice(GraphicalContext *gc,  iftImage *original_img, iftImage *resliced_img, iftPoint p_0, int slice){
+    
     iftPoint p = {0, 0, -gc->diag/2};
     
-    p_0 = mulByScalar(p_0, -1);
+    //p_0 = mulByScalar(p_0, -1);
     iftVector v_p0 = {.x=p_0.x, .y=p_0.y, .z=p_0.z};
     iftMatrix *Txyz = iftTranslationMatrix(v_p0);
 
     iftMatrix *transform = iftMultMatrices(Txyz, gc->Psi);
 
-    for(p.x = 0; p.x < reslice_img->xsize; p.x++){
-      for(p.y = 0; p.y < reslice_img->ysize; p.y++){
+    for(p.x = 0; p.x < resliced_img->xsize; p.x++){
+      for(p.y = 0; p.y < resliced_img->ysize; p.y++){
         iftPoint pp = iftTransformPoint(transform, p);
 
         if(validPoint(original_img, pp)){
             iftVoxel p_ = {p.x, p.y, slice};
-            int i = iftGetVoxelIndex(reslice_img, p_);
+            int i = iftGetVoxelIndex(resliced_img, p_);
             int val = iftImageValueAtPoint(original_img, pp);
-            reslice_img->val[i] = val;
+            resliced_img->val[i] = val;
         }
       }
     }
@@ -96,7 +97,7 @@ void find_alpha_and_betha(iftPoint p_np, float *alpha, float *betha) {
 
   float z_ = p_np.x *-sinf(-_betha) + p_np.z * cosf(-_betha);
   float y_magnitude = (sqrtf(p_np.y * p_np.y + z_*z_));
-  float cos_alpha = iftAlmostZero(y_magnitude) ? 1 : (z_ * p_np.z)/y_magnitude;
+  float cos_alpha = iftAlmostZero(y_magnitude) ? 1 : (z_)/y_magnitude;
   float _alpha = acosf(cos_alpha);
 
   //convert alpha and betha to degrees
@@ -132,8 +133,8 @@ int main(int argc, char *argv[])
   if (argc != 10){
     iftError("Usage: getslice <...>\n"
 	    "[1] input image .scn \n"
-        "[2] P_0 \n"
-        "[3] P_n-1 \n"
+        "[2] P_0 ex.: 139 139 0 \n"
+        "[3] P_n-1 ex: 139 270 200\n"
         "[4] The number of n of axial slices of the new scene \n"
         "[5] the output .scn scene \n",
 	     "main");
@@ -159,13 +160,11 @@ int main(int argc, char *argv[])
 
   float alpha, betha;
 
-  find_alpha_and_betha(p_np, &alpha, &lambda);
+  find_alpha_and_betha(p_np, &alpha, &betha);
 
   GraphicalContext *gc = create_graphical_context(img, alpha, betha);
 
   iftImage *resliced_image = reslice_image(gc, img, n, p_0, p_np, lambda);
-
-  int max_value = iftMaximumValue(resliced_image);
 
   iftWriteImageByExt(resliced_image, argv[9]);
 
