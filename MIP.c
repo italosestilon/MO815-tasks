@@ -222,6 +222,73 @@ void change_intesity_interval(iftImage *img, int h) {
 
 }
 
+iftImage *applyRainBowColorTable(iftImage *img, int h){
+  iftImage *colored = iftCreateColorImage(img->xsize,img->ysize, img->zsize, 16);
+
+  iftVoxel u;
+ 
+  for(u.x = 0; u.x < img->xsize; u.x++) {
+    for(u.y = 0; u.y < img->ysize; u.y++) {
+      for(u.z = 0; u.z < img->zsize; u.z++) {
+        int p = iftGetVoxelIndex(img, u);
+        float v = (float) img->val[p];
+        
+        v = v/h;
+        v = 4*v + 1;
+
+        int r = iftRound(h * max(0.0, (3 - absolute(v -4) - absolute(v -5))/2));
+        int g = iftRound(h * max(0.0, (4 - absolute(v -2) - absolute(v -4))/2));
+        int b = iftRound(h * max(0.0, (3 - absolute(v -1) - absolute(v -2))/2));
+
+        iftColor rgb_color;
+        rgb_color.val[0] = r;
+        rgb_color.val[1] = g;
+        rgb_color.val[2] = b;
+        //rgb_color.alpha = 1;
+
+        iftColor YCbCr_color = iftRGBtoYCbCr(rgb_color, h);
+      
+        colored->val[p] = YCbCr_color.val[0];
+        colored->Cb[p] = YCbCr_color.val[1];
+        colored->Cr[p] = YCbCr_color.val[2];
+
+      }
+    }
+  }
+
+  return colored;
+}
+
+iftImage *window_level(iftImage *img, int level, int midpoint, int h){
+  int l1 = iftRound(midpoint - level/2);
+  int l2 = iftRound(level/2 + midpoint);
+
+  iftImage *streached = iftCreateImage(img->xsize,img->ysize, img->zsize);
+
+  iftVoxel u;
+
+  for(u.x = 0; u.x < img->xsize; u.x++) {
+    for(u.y = 0; u.y < img->ysize; u.y++) {
+      for(u.z = 0; u.z < img->zsize; u.z++) {
+        int p = iftGetVoxelIndex(img, u);
+        int l = img->val[p];
+        int k = 0;
+        if (l > l2) {
+          k = h;
+        } else if (l < l1) {
+          k = 0;
+        } else {
+          k = iftRound(h/(l2 - l1)*(l - l1));
+        }
+        streached->val[p] = k;
+      }
+    }
+  }
+
+  return streached;
+
+}
+
 int main(int argc, char *argv[]) 
 {
   timer *tstart = NULL;
@@ -255,7 +322,9 @@ int main(int argc, char *argv[])
 
   change_intesity_interval(projection, h);
 
-  iftWriteImageByExt(projection, argv[4]);
+  iftImage *colored = applyRainBowColorTable(projection, h);
+
+  iftWriteImageByExt(colored, argv[4]);
 
   iftDestroyImage(&img);
 
