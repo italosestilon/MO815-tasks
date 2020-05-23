@@ -41,7 +41,7 @@ float PointsDotProd(iftPoint a, iftPoint b) {
 }
 
 int isPointsEqual(iftPoint a, iftPoint b) {
-  return a.x == b.x && a.y == b.y && a.z == b.z;
+  return fabs(a.x - b.x) <= IFT_EPSILON && fabs(a.y - b.y) <= IFT_EPSILON && fabs(a.z - b.z) <= IFT_EPSILON;
 }
 
 GraphicalContext *create_graphical_context(iftImage *img, float alpha, float beta) {
@@ -193,12 +193,15 @@ iftImage *maximum_intesity_projection(iftImage *img, GraphicalContext *gc) {
           }
         }
       }
-      p1 = addPoints(p0, mulByScalar(np, min_lambda));
-      pn = addPoints(p0, mulByScalar(np, max_lambda));
 
-      iftVoxel p_ = {p.x, p.y, 0};
-      int index = iftGetVoxelIndex(projection, p_);
-      projection->val[index] = find_max_intensity(img, p1, pn);
+      if(min_lambda < max_lambda) {
+        p1 = addPoints(p0, mulByScalar(np, min_lambda));
+        pn = addPoints(p0, mulByScalar(np, max_lambda));
+
+        iftVoxel p_ = {iftRound(p.x), iftRound(p.y), 0};
+        int index = iftGetVoxelIndex(projection, p_);
+        projection->val[index] = find_max_intensity(img, p1, pn);
+      }
     }
   }
 
@@ -259,29 +262,32 @@ iftImage *applyRainBowColorTable(iftImage *img, int h){
   return colored;
 }
 
-iftImage *window_level(iftImage *img, int level, int midpoint, int h){
-  int l1 = iftRound(midpoint - level/2);
-  int l2 = iftRound(level/2 + midpoint);
+iftImage *window_level(iftImage *img, float window_p, float level_p, int h){
+  int img_min = iftMinimumValue(img);
+  int img_max = iftMaximumValue(img);
+
+  int window = iftRound((img_max - img_min)*window_p);
+  int level = iftRound(img_max * level_p);
+  int l1 = iftRound(level - level/2);
+  int l2 = iftRound(level/2 + window);
 
   iftImage *streached = iftCreateImage(img->xsize,img->ysize, img->zsize);
 
-  iftVoxel u;
+  iftVoxel u = {.x = 0, .y = 0, .z = 0};
 
   for(u.x = 0; u.x < img->xsize; u.x++) {
     for(u.y = 0; u.y < img->ysize; u.y++) {
-      for(u.z = 0; u.z < img->zsize; u.z++) {
-        int p = iftGetVoxelIndex(img, u);
-        int l = img->val[p];
-        int k = 0;
-        if (l > l2) {
-          k = h;
-        } else if (l < l1) {
-          k = 0;
-        } else {
-          k = iftRound(h/(l2 - l1)*(l - l1));
-        }
-        streached->val[p] = k;
+      int p = iftGetVoxelIndex(img, u);
+      int l = img->val[p];
+      int k = 0;
+      if (l > l2) {
+        k = h;
+      } else if (l < l1) {
+        k = 0;
+      } else {
+        k = iftRound(h/(l2 - l1)*(l - l1));
       }
+      streached->val[p] = k;
     }
   }
 
@@ -322,7 +328,9 @@ int main(int argc, char *argv[])
 
   change_intesity_interval(projection, h);
 
-  iftImage *colored = applyRainBowColorTable(projection, h);
+  iftImage *normalized =  window_level(projection, .5, .2, h);
+
+  iftImage *colored = applyRainBowColorTable(normalized, h);
 
   iftWriteImageByExt(colored, argv[4]);
 

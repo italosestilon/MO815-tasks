@@ -57,7 +57,7 @@ GraphicalContext *create_graphical_context(iftImage *img, float alpha, float bet
     gc->Ry = iftRotationMatrix(IFT_AXIS_Y, beta);
     gc->Psi_r = iftMultMatrices(gc->Rx,gc->Ry);
 
-    iftPrintMatrix(gc->Psi_r);
+    //iftPrintMatrix(gc->Psi_r);
 
     gc->Psi = iftMultMatrices(gc->Psi_r, gc->Tuv);
 
@@ -116,7 +116,7 @@ iftImage *reslice_image(GraphicalContext *gc, iftImage *img, int num_slices, ift
   get_slice(gc, img, resliced_image, pk, 0);
 
   for(int i=1; i < num_slices; i++){
-    pk = addPoints(pk, mulByScalar(np, lambda));
+    pk = addPoints(p0, mulByScalar(np, lambda*i));
     get_slice(gc, img, resliced_image, pk, i);
   }
 
