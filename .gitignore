@@ -55,9 +55,15 @@ dkms.conf
 # Data
 data
 *.pgm
+*.scn
+*.nii.gz
+*.png
+*.txt
 
 # Executable
 bin
+build
+visva
 
 # Externals
 externals
