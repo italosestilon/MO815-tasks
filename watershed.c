@@ -5,6 +5,7 @@ iftImage *compute_gradient(iftImage *img, float adjacency_radius) {
   
   iftAdjRel *A = iftSpheric(adjacency_radius);
 
+  #pragma omp parallel for 
   for(int i = 0; i < img->n; i++) {
     iftVoxel u = iftGetVoxelCoord(img, i);
     float grad_i = 0.0;
@@ -13,13 +14,12 @@ iftImage *compute_gradient(iftImage *img, float adjacency_radius) {
       iftVoxel v = iftGetAdjacentVoxel(A, u, j);
       int q = iftGetVoxelIndex(img, v);
       float intensity_diff = img->val[i] - img->val[q];
-      //iftVector pos_diff = {v.x - u.x, v.y - u.y, v.z - u.z};
 
-      grad_i = intensity_diff * intensity_diff;
+      grad_i += intensity_diff * intensity_diff;
 
     }
 
-    grad_i = sqrt(grad_i)/A->n;
+    grad_i = sqrtf(grad_i)/A->n;
 
     grad->val[i] = iftRound(grad_i);
   }
@@ -37,18 +37,18 @@ iftImage *SegmentByWatershed(iftImage *img, iftLabeledSet *seeds, iftImage *omap
   label = iftCreateImage(img->xsize, img->ysize, img->zsize);
 
   // compute gradients
-  gradI = compute_gradient(img, 1.0);
-  gradO = compute_gradient(omap, 1.0);
+  gradI = compute_gradient(img, 1.5);
+  gradO = compute_gradient(omap, 1.5);
 
   for(int i = 0; i < pathval->n; i++) {
     pathval->val[i] = IFT_INFINITY_INT;
   }
 
   iftGQueue  *Q = NULL;
-  int            i, p, q, tmp;
+  int            p, q, tmp;
   iftVoxel       u, v;
   iftLabeledSet *S = seeds;
-  iftAdjRel     *A = iftSpheric(1.0);
+  iftAdjRel     *A = iftSpheric(1.5);
 
   Q = iftCreateGQueue(256, img->n, pathval->val);
 
@@ -74,14 +74,14 @@ iftImage *SegmentByWatershed(iftImage *img, iftLabeledSet *seeds, iftImage *omap
       if (temp < pathval->val[q] && Q->L.elem[q].color != IFT_BLACK) {
         pathval->val[q] = temp;
         label->val[q] = label->val[p];
-        //iftRemoveGQueueElem(Q, q);
+        //if (Q->L.elem[q].color == IFT_GRAY)
+        //  iftRemoveGQueueElem(Q, q);
         iftInsertGQueue(&Q, q);
       }
 
     }
   }
   
-
   return (label);
 }
 
