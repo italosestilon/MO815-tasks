@@ -91,3 +91,20 @@ target_link_libraries(o_watershed m)
 target_link_libraries(o_watershed blas ${BLAS_LIBRARIES})
 target_link_libraries(o_watershed -lstdc++)
 target_link_libraries(o_watershed ${LAPACK_LIBRARIES})
+
+
+# add the executable
+add_executable(dynamic dynamictrees.c)
+target_link_libraries(dynamic ift)
+target_link_libraries(dynamic m)
+target_link_libraries(dynamic blas ${BLAS_LIBRARIES})
+target_link_libraries(dynamic -lstdc++)
+target_link_libraries(dynamic ${LAPACK_LIBRARIES})
+
+# add the executable
+add_executable(surface-rendering surface-rendering.c)
+target_link_libraries(surface-rendering ift)
+target_link_libraries(surface-rendering m)
+target_link_libraries(surface-rendering blas ${BLAS_LIBRARIES})
+target_link_libraries(surface-rendering -lstdc++)
+target_link_libraries(surface-rendering ${LAPACK_LIBRARIES})
