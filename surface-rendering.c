@@ -112,6 +112,108 @@ GraphicalContext *create_graphical_context(iftImage *img, float alpha, float bet
     return gc;
 }
 
+iftImage *GetSliceSagital(iftImage *img, iftImage *label_image, int x, GraphicalContext *gc) {
+  iftImage *slc = iftCreateColorImage(img->ysize,img->zsize,1, 8);
+  iftColorTable *colorTabel = iftCategoricalColorTable(iftMaximumValue(label_image) + 1);
+  
+  iftVoxel  u;
+  int q=0;
+  
+  u.x = x;
+  
+  for (u.z = img->zsize-1; u.z >= 0; u.z--) {
+    for (u.y = 0; u.y < img->ysize; u.y++){
+      int p = iftGetVoxelIndex(img,u);      
+
+      int label = label_image->val[p];
+      iftColor rgb_color = colorTabel->color[label];
+  
+      if(label == 0) {
+        rgb_color.val[0] = img->val[p];
+        rgb_color.val[1] = img->val[p];
+        rgb_color.val[2] = img->val[p];
+      }
+      
+      iftColor YCbCr_color = iftRGBtoYCbCr(rgb_color, gc->r_a);
+      slc->val[q] = img->val[p];
+      
+      slc->Cb[q] = YCbCr_color.val[1];
+      slc->Cr[q] = YCbCr_color.val[2];
+      q++;
+    }
+  }
+  return(slc);
+}
+
+iftImage *GetSliceCoronal(iftImage *img, iftImage *label_image, int y, GraphicalContext *gc) {
+  iftImage *slc = iftCreateColorImage(img->xsize,img->zsize,1, 8);
+  iftColorTable *colorTabel = iftCategoricalColorTable(iftMaximumValue(label_image) + 1);
+  iftVoxel  u;
+  int q=0;
+  
+  u.y = y;
+
+  for (u.z = img->zsize-1; u.z >= 0; u.z--){
+    for (u.x = 0; u.x < img->xsize; u.x++){
+      int p = iftGetVoxelIndex(img,u);      
+      slc->val[q] = img->val[p];
+      int label = label_image->val[p];
+      iftColor rgb_color = colorTabel->color[label];
+  
+      if(label == 0) {
+        rgb_color.val[0] = img->val[p];
+        rgb_color.val[1] = img->val[p];
+        rgb_color.val[2] = img->val[p];
+      }
+      
+      iftColor YCbCr_color = iftRGBtoYCbCr(rgb_color, gc->r_a);
+      slc->val[q] = img->val[p];
+      
+      slc->Cb[q] = YCbCr_color.val[1];
+      slc->Cr[q] = YCbCr_color.val[2];
+      q++;
+    }
+  }
+    
+
+  return(slc);
+}
+
+iftImage *GetSliceAxial(iftImage *img, iftImage *label_image, int z, GraphicalContext *gc)
+{
+  iftImage *slc = iftCreateColorImage(img->xsize,img->ysize,1, 8);
+  iftColorTable *colorTabel = iftCategoricalColorTable(iftMaximumValue(label_image) + 1);
+  iftVoxel  u;
+  int       q=0;
+  
+  u.z = z;
+
+  for (u.y = 0; u.y < img->ysize; u.y++) {
+    for (u.x = 0; u.x < img->xsize; u.x++){
+      int p = iftGetVoxelIndex(img,u);      
+      slc->val[q] = img->val[p];
+      int label = label_image->val[p];
+      iftColor rgb_color = colorTabel->color[label];
+  
+      if(label == 0) {
+        rgb_color.val[0] = img->val[p];
+        rgb_color.val[1] = img->val[p];
+        rgb_color.val[2] = img->val[p];
+      }
+      
+      iftColor YCbCr_color = iftRGBtoYCbCr(rgb_color, gc->r_a);
+      slc->val[q] = img->val[p];
+      
+      slc->Cb[q] = YCbCr_color.val[1];
+      slc->Cr[q] = YCbCr_color.val[2];
+
+      q++;
+    }
+  }
+
+  return(slc);
+}
+
 iftPoint find_surface_point(iftImage *label_image, iftPoint p1, iftPoint pn) {
   float n;
   float dx, dy, dz;
@@ -177,11 +279,11 @@ iftMImage *compute_gradient(iftImage *img, iftImage *label_image, float adjacenc
   
   iftAdjRel *A = iftSpheric(adjacency_radius);
 
+  float alpha = 1.0;
+  int c_in = 0, c_out = 0;
   #pragma omp parallel for 
   for(int i = 0; i < img->n; i++) {
     iftVoxel u = iftGetVoxelCoord(img, i);
-    if(!iftValidVoxel(img, u))
-      continue;
 
     iftPoint grad_vector = {.x=0, .y=0, .z=0};
 
@@ -197,15 +299,21 @@ iftMImage *compute_gradient(iftImage *img, iftImage *label_image, float adjacenc
 
     }
 
-    iftPoint p_extended = addPoints(iftVoxelToPoint(u), mulByScalar(grad_vector, 2.0));
+    //grad_vector = mulByScalar(grad_vector, 1/pointNorm(grad_vector));
+    iftPoint p_extended = addPoints(iftVoxelToPoint(u), mulByScalar(grad_vector, alpha));
+    
     if(iftValidVoxel(label_image, iftPointToVoxel(p_extended))) {
         int j = iftGetVoxelIndex(label_image, iftPointToVoxel(p_extended));
-
+      
         if((label_image->val[i] == label_image->val[j])) {
-          grad_vector = mulByScalar(grad_vector, -1/pointNorm(grad_vector));
+            //grad_vector = mulByScalar(grad_vector, -1/pointNorm(grad_vector));
+            c_in++;
         } else {
-          grad_vector = mulByScalar(grad_vector, 1/pointNorm(grad_vector));
+            grad_vector = mulByScalar(grad_vector, 1/pointNorm(grad_vector));
         }
+    } else {
+        grad_vector = mulByScalar(grad_vector, 1/pointNorm(grad_vector));
+        c_out++;
     }
 
     grad->val[i][0] = grad_vector.x;
@@ -213,6 +321,8 @@ iftMImage *compute_gradient(iftImage *img, iftImage *label_image, float adjacenc
     grad->val[i][2] = grad_vector.z;
 
   }
+
+  printf("%d/%d", c_in, c_out);
 
   return grad;
 
@@ -259,15 +369,17 @@ iftPoint interpolate_grad(iftMImage *grad, iftVoxel pp) {
     return value;
 }
 
-double phones_illumination(iftImage *img, iftPoint grad_pp, iftPoint np, iftPoint pp, iftPoint p0, GraphicalContext *gc) {
+double phones_model(iftImage *img, iftPoint grad_pp, iftPoint np, iftPoint pp, iftPoint p0, GraphicalContext *gc) {
     double r = 0;
     
     double mag = (pointNorm(grad_pp)*pointNorm(np));
+
+    //grad_pp = mulByScalar(grad_pp, -1);
     
-    printf("grad pp norm %f\n", pointNorm(grad_pp));
-    printf("grad pp= (%f, %f, %f)\n", grad_pp.x, grad_pp.y, grad_pp.z);
-    printf("mag = %lf\n", mag);
-    printf("p norm %f\n", pointNorm(np));
+    //printf("grad pp norm %f\n", pointNorm(grad_pp));
+    //printf("grad pp= (%f, %f, %f)\n", grad_pp.x, grad_pp.y, grad_pp.z);
+    //printf("mag = %lf\n", mag);
+    //printf("p norm %f\n", pointNorm(np));
     
     double tetha = acos(PointsDotProd(grad_pp, mulByScalar(np, -1))/mag);
 
@@ -275,10 +387,10 @@ double phones_illumination(iftImage *img, iftPoint grad_pp, iftPoint np, iftPoin
       double r_d = gc->r_a*(pointNorm(subPoints(pp, p0)) - gc->min_dist)/(gc->max_dist - gc->min_dist);
       float specular = tetha >= 0 && tetha < PI/4.0 ? gc->k_s * pow(cos(2*tetha), gc->n_s) : 0.0;
       r = gc->k_a*gc->r_a + r_d * (gc->k_d * cos(tetha) + specular);
-      printf("tetha = %lf\n", tetha);
+      //printf("tetha = %lf\n", tetha);
       //printf("pow = %lf\n", pow(cos(2*tetha), gc->n_s));
       
-      printf("r = %lf\n", r);
+      //printf("r = %lf\n", r);
     }
     return r;
 }
@@ -380,7 +492,7 @@ iftImage *surface_rendering(iftImage *img, iftImage *label_image, GraphicalConte
 
         if (pp.x >= 0 && pp.y >= 0 && pp.z >= 0) {
           iftPoint grad_point = interpolate_grad(grads, iftPointToVoxel(pp));
-          float r = phones_illumination(img, grad_point, np, pp, c_p, gc);
+          float r = phones_model(img, grad_point, np, pp, c_p, gc);
 
           iftVoxel label_p = {iftRound(pp.x), iftRound(pp.y), iftRound(pp.z)};
           int label_index = iftGetVoxelIndex(label_image, label_p);
@@ -412,7 +524,7 @@ iftImage *surface_rendering(iftImage *img, iftImage *label_image, GraphicalConte
 
 void change_intesity_interval(iftImage *img, int h) {
   int min = iftMinimumValue(img);
-  int max = iftMaximumValue(img);
+  int max_v = iftMaximumValue(img);
 
   iftVoxel u = {0, 0, 0};
 
@@ -420,7 +532,7 @@ void change_intesity_interval(iftImage *img, int h) {
     for(u.y = 0; u.y < img->ysize; u.y++) {
       int p = iftGetVoxelIndex(img,u);
       int val = img->val[p];
-      float new_val = h*(val - min)/((float)(max - min));
+      float new_val = h*(val - min)/((float)(max_v - min));
       img->val[p] = iftRound(new_val);
     }
   }
@@ -527,9 +639,19 @@ int main(int argc, char *argv[])
 
   GraphicalContext *gc = create_graphical_context(img, alpha, beta, h);
 
-  iftImage *rendering = surface_rendering(img, label_image, gc);
+  //iftImage *rendering = surface_rendering(img, label_image, gc);
+  iftImage *slc_sagital = GetSliceSagital(img, label_image, 120, gc);
+  iftImage *slc_coronal = GetSliceCoronal(img, label_image, 120, gc);
+  iftImage *slc_axial = GetSliceAxial(img, label_image, 120, gc);
 
-  iftWriteImageByExt(rendering, argv[5]);
+  change_intesity_interval(slc_sagital, h);
+  change_intesity_interval(slc_coronal, h);
+  change_intesity_interval(slc_axial, h);
+
+  //iftWriteImageByExt(rendering, argv[5]);
+  iftWriteImageByExt(slc_sagital, "sagital.png");
+  iftWriteImageByExt(slc_coronal, "coronal.png");
+  iftWriteImageByExt(slc_axial, "axial.png");  
 
   iftDestroyImage(&img);
   
