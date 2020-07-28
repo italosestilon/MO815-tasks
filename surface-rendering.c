@@ -1,3 +1,4 @@
+// Made by Italos
 #include "ift.h"
 
 typedef struct _face {
@@ -275,15 +276,17 @@ iftPoint find_surface_point(iftImage *label_image, iftPoint p1, iftPoint pn) {
 }
 
 iftMImage *compute_gradient(iftImage *img, iftImage *label_image, float adjacency_radius) {
-  iftMImage *grad = iftCreateMImage(img->xsize, img->ysize, img->zsize, 3);
+  iftMImage *grads = iftCreateMImage(img->xsize, img->ysize, img->zsize, 3);
   
   iftAdjRel *A = iftSpheric(adjacency_radius);
+  //iftImage *border = iftBorderImage(label_image, 1);
+  float alpha = 2.0;
 
-  float alpha = 1.0;
-  int c_in = 0, c_out = 0;
   #pragma omp parallel for 
   for(int i = 0; i < img->n; i++) {
     iftVoxel u = iftGetVoxelCoord(img, i);
+
+    //if(border->val[i] == 0) continue;
 
     iftPoint grad_vector = {.x=0, .y=0, .z=0};
 
@@ -299,32 +302,26 @@ iftMImage *compute_gradient(iftImage *img, iftImage *label_image, float adjacenc
 
     }
 
-    //grad_vector = mulByScalar(grad_vector, 1/pointNorm(grad_vector));
-    iftPoint p_extended = addPoints(iftVoxelToPoint(u), mulByScalar(grad_vector, alpha));
+    iftPoint p_near = addPoints(iftVoxelToPoint(u), mulByScalar(grad_vector, alpha));
     
-    if(iftValidVoxel(label_image, iftPointToVoxel(p_extended))) {
-        int j = iftGetVoxelIndex(label_image, iftPointToVoxel(p_extended));
-      
+    if(iftValidVoxel(label_image, iftPointToVoxel(p_near))) {
+        int j = iftGetVoxelIndex(label_image, iftPointToVoxel(p_near));
         if((label_image->val[i] == label_image->val[j])) {
-            //grad_vector = mulByScalar(grad_vector, -1/pointNorm(grad_vector));
-            c_in++;
+            grad_vector = mulByScalar(grad_vector, -1/pointNorm(grad_vector));
         } else {
             grad_vector = mulByScalar(grad_vector, 1/pointNorm(grad_vector));
         }
     } else {
         grad_vector = mulByScalar(grad_vector, 1/pointNorm(grad_vector));
-        c_out++;
     }
 
-    grad->val[i][0] = grad_vector.x;
-    grad->val[i][1] = grad_vector.y;
-    grad->val[i][2] = grad_vector.z;
+    grads->val[i][0] = grad_vector.x;
+    grads->val[i][1] = grad_vector.y;
+    grads->val[i][2] = grad_vector.z;
 
   }
 
-  printf("%d/%d", c_in, c_out);
-
-  return grad;
+  return grads;
 
 }
 
@@ -334,7 +331,7 @@ iftPoint interpolate_grad(iftMImage *grad, iftVoxel pp) {
     float dx,dy,dz;
     iftPoint val[6], value;
     
-    u[0].x = (int)pp.x;     u[0].y = (int)pp.y;       u[0].z = (int)pp.z;
+    u[0].x = (int)pp.x;     u[0].y = (int)pp.y;      u[0].z = (int)pp.z;
     u[1].x = u[0].x+1;      u[1].y = u[0].y;         u[1].z = u[0].z;
     u[2].x = u[0].x;        u[2].y = u[0].y + 1;     u[2].z = u[0].z;
     u[3].x = u[0].x+1;      u[3].y = u[0].y + 1;     u[3].z = u[0].z;
@@ -347,7 +344,10 @@ iftPoint interpolate_grad(iftMImage *grad, iftVoxel pp) {
         if (iftValidVoxel(grad,u[i])){
             p[i] = iftGetVoxelIndex(grad,u[i]);
         }else{
-            int index = iftGetVoxelIndex(grad,u[0]);
+            pp.x = iftRound(pp.x);
+            pp.y = iftRound(pp.y);
+            pp.z = iftRound(pp.z);
+            int index = iftGetVoxelIndex(grad, pp);
             iftPoint grad_p;
             grad_p.x = grad->val[index][0];
             grad_p.y = grad->val[index][1];
@@ -363,40 +363,33 @@ iftPoint interpolate_grad(iftMImage *grad, iftVoxel pp) {
     val[4] = addPoints(mulByScalar(val[1],dy), mulByScalar(val[0],(1.0-dy)));
     val[5] = addPoints(mulByScalar(val[3],dy), mulByScalar(val[2],(1.0-dy)));
     value  = addPoints(mulByScalar(val[5],dz), mulByScalar(val[4],(1.0-dz)));
-    if (value.x == 0 && value.y == 0 && value.z == 0) {
-      printf("Sad %f \n", value.x);
-    }
+    
     return value;
 }
 
-double phones_model(iftImage *img, iftPoint grad_pp, iftPoint np, iftPoint pp, iftPoint p0, GraphicalContext *gc) {
+double phones_model(iftImage *img, iftPoint grad_pp, iftPoint np, iftPoint pp, 
+                    iftPoint p0, GraphicalContext *gc) {
     double r = 0;
-    
-    double mag = (pointNorm(grad_pp)*pointNorm(np));
+    if (grad_pp.x == 0 && grad_pp.y == 0 && grad_pp.z == 0) {
+      printf("Zero gradient...\n");
+    }
 
-    //grad_pp = mulByScalar(grad_pp, -1);
+    double magnitudes = (pointNorm(grad_pp)*pointNorm(np));
     
-    //printf("grad pp norm %f\n", pointNorm(grad_pp));
-    //printf("grad pp= (%f, %f, %f)\n", grad_pp.x, grad_pp.y, grad_pp.z);
-    //printf("mag = %lf\n", mag);
-    //printf("p norm %f\n", pointNorm(np));
-    
-    double tetha = acos(PointsDotProd(grad_pp, mulByScalar(np, -1))/mag);
+    double tetha = acos(PointsDotProd(grad_pp, mulByScalar(np, -1))/magnitudes);
 
-    if(tetha >=  0 && tetha < PI/2) {
+    if(tetha >=  0 && tetha < PI/2.0) {
       double r_d = gc->r_a*(pointNorm(subPoints(pp, p0)) - gc->min_dist)/(gc->max_dist - gc->min_dist);
       float specular = tetha >= 0 && tetha < PI/4.0 ? gc->k_s * pow(cos(2*tetha), gc->n_s) : 0.0;
       r = gc->k_a*gc->r_a + r_d * (gc->k_d * cos(tetha) + specular);
-      //printf("tetha = %lf\n", tetha);
-      //printf("pow = %lf\n", pow(cos(2*tetha), gc->n_s));
-      
-      //printf("r = %lf\n", r);
+    }
+    if(r < 1) {
+      printf("Oopds");
     }
     return r;
 }
 
 void distance_map(iftImage *img, iftPoint p, GraphicalContext *gc) {
-
   iftVoxel u = {.x=0, .y=0, .z=0};
   float max_dist = 1;
   float min_dist = FLT_MAX;
@@ -488,37 +481,30 @@ iftImage *surface_rendering(iftImage *img, iftImage *label_image, GraphicalConte
 
         iftVoxel p_ = {iftRound(p.x), iftRound(p.y), 0};
         int index = iftGetVoxelIndex(projection, p_);
+
         iftPoint pp = find_surface_point(label_image, p1, pn);
 
         if (pp.x >= 0 && pp.y >= 0 && pp.z >= 0) {
           iftPoint grad_point = interpolate_grad(grads, iftPointToVoxel(pp));
           float r = phones_model(img, grad_point, np, pp, c_p, gc);
 
-          iftVoxel label_p = {iftRound(pp.x), iftRound(pp.y), iftRound(pp.z)};
-          int label_index = iftGetVoxelIndex(label_image, label_p);
+          iftVoxel p_label = {iftRound(pp.x), iftRound(pp.y), iftRound(pp.z)};
+          int index_label = iftGetVoxelIndex(label_image, p_label);
 
-          int label = label_image->val[label_index];
+          int label = label_image->val[index_label];
           iftColor rgb_color = colorTabel->color[label];
-          //rgb_color.alpha = 1;
-          
-          //printf("label = %d\n", label);
-          
-          //printf("number of labels = %d", iftMaximumValue(label_image));
 
           iftColor YCbCr_color = iftRGBtoYCbCr(rgb_color, gc->r_a);
       
           projection->val[index] = iftRound(r);
           projection->Cb[index] = YCbCr_color.val[1];
           projection->Cr[index] = YCbCr_color.val[2];
-           
-          if(iftRound(r) < 0) {
-            printf("Houstoun we have a problem %d %f", iftRound(r), r);
-          }
+
         }
       }
     }
   }
-
+  iftDestroyMImage(&grads);
   return projection;
 }
 
@@ -536,76 +522,6 @@ void change_intesity_interval(iftImage *img, int h) {
       img->val[p] = iftRound(new_val);
     }
   }
-
-}
-
-iftImage *applyRainBowColorTable(iftImage *img, int h){
-  iftImage *colored = iftCreateColorImage(img->xsize,img->ysize, img->zsize, 16);
-
-  iftVoxel u;
- 
-  for(u.x = 0; u.x < img->xsize; u.x++) {
-    for(u.y = 0; u.y < img->ysize; u.y++) {
-      for(u.z = 0; u.z < img->zsize; u.z++) {
-        int p = iftGetVoxelIndex(img, u);
-        float v = (float) img->val[p];
-        
-        v = v/h;
-        v = 4*v + 1;
-
-        int r = iftRound(h * max(0.0, (3 - absolute(v -4) - absolute(v -5))/2));
-        int g = iftRound(h * max(0.0, (4 - absolute(v -2) - absolute(v -4))/2));
-        int b = iftRound(h * max(0.0, (3 - absolute(v -1) - absolute(v -2))/2));
-
-        iftColor rgb_color;
-        rgb_color.val[0] = r;
-        rgb_color.val[1] = g;
-        rgb_color.val[2] = b;
-        //rgb_color.alpha = 1;
-
-        iftColor YCbCr_color = iftRGBtoYCbCr(rgb_color, h);
-      
-        colored->val[p] = YCbCr_color.val[0];
-        colored->Cb[p] = YCbCr_color.val[1];
-        colored->Cr[p] = YCbCr_color.val[2];
-
-      }
-    }
-  }
-
-  return colored;
-}
-
-iftImage *window_level(iftImage *img, float window_p, float level_p, int h){
-  int img_min = iftMinimumValue(img);
-  int img_max = iftMaximumValue(img);
-
-  int window = iftRound((img_max - img_min)*window_p);
-  int level = iftRound(img_max * level_p);
-  int l1 = iftRound(level - level/2);
-  int l2 = iftRound(level/2 + window);
-
-  iftImage *streached = iftCreateImage(img->xsize,img->ysize, img->zsize);
-
-  iftVoxel u = {.x = 0, .y = 0, .z = 0};
-
-  for(u.x = 0; u.x < img->xsize; u.x++) {
-    for(u.y = 0; u.y < img->ysize; u.y++) {
-      int p = iftGetVoxelIndex(img, u);
-      int l = img->val[p];
-      int k = 0;
-      if (l > l2) {
-        k = h;
-      } else if (l < l1) {
-        k = 0;
-      } else {
-        k = iftRound(h/(l2 - l1)*(l - l1));
-      }
-      streached->val[p] = k;
-    }
-  }
-
-  return streached;
 
 }
 
@@ -639,7 +555,7 @@ int main(int argc, char *argv[])
 
   GraphicalContext *gc = create_graphical_context(img, alpha, beta, h);
 
-  //iftImage *rendering = surface_rendering(img, label_image, gc);
+  iftImage *rendering = surface_rendering(img, label_image, gc);
   iftImage *slc_sagital = GetSliceSagital(img, label_image, 120, gc);
   iftImage *slc_coronal = GetSliceCoronal(img, label_image, 120, gc);
   iftImage *slc_axial = GetSliceAxial(img, label_image, 120, gc);
@@ -648,13 +564,17 @@ int main(int argc, char *argv[])
   change_intesity_interval(slc_coronal, h);
   change_intesity_interval(slc_axial, h);
 
-  //iftWriteImageByExt(rendering, argv[5]);
+  iftWriteImageByExt(rendering, argv[5]);
   iftWriteImageByExt(slc_sagital, "sagital.png");
   iftWriteImageByExt(slc_coronal, "coronal.png");
   iftWriteImageByExt(slc_axial, "axial.png");  
 
   iftDestroyImage(&img);
-  
+  iftDestroyImage(&rendering);
+  iftDestroyImage(&slc_sagital);
+  iftDestroyImage(&slc_coronal);
+  iftDestroyImage(&slc_axial);
+   
   /* -------------------- End of the coding area ----------------- */
     
   puts("\nDone...");

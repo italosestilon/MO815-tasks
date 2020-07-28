@@ -1,3 +1,5 @@
+//Made with S2 by Italos Estilon :)
+
 #include "ift.h"
 
 iftImage *compute_gradient(iftImage *img, float adjacency_radius) {
@@ -50,7 +52,7 @@ iftImage *SegmentByWatershed(iftImage *img, iftLabeledSet *seeds, iftImage *omap
   iftLabeledSet *S = seeds;
   iftAdjRel     *A = iftSpheric(1.5);
 
-  Q = iftCreateGQueue(256, img->n, pathval->val);
+  Q = iftCreateGQueue(IFT_QSIZE, img->n, pathval->val);
 
   while(S != NULL) {
     p = S->elem;

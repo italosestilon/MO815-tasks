@@ -141,7 +141,7 @@ int find_max_intensity(iftImage *img, iftPoint p1, iftPoint pn) {
   return max_intensity;
 }
 
-iftImage *maximum_intesity_projection(iftImage *img, GraphicalContext *gc) {
+iftImage *surface_rendering(iftImage *img, GraphicalContext *gc) {
   iftImage *projection = iftCreateImage(gc->diag, gc->diag, 1);
 
   float diag = gc->diag;
@@ -324,7 +324,7 @@ int main(int argc, char *argv[])
 
   GraphicalContext *gc = create_graphical_context(img, alpha, beta);
 
-  iftImage *projection = maximum_intesity_projection(img, gc);
+  iftImage *projection = surface_rendering(img, gc);
 
   change_intesity_interval(projection, h);
 

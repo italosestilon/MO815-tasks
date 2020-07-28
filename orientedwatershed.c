@@ -1,3 +1,5 @@
+//Made with S2 by Italos Estilon :)
+
 #include "ift.h"
   
 iftImage *compute_gradient(iftImage *img, float adjacency_radius) {
@@ -29,7 +31,7 @@ iftImage *compute_gradient(iftImage *img, float adjacency_radius) {
 }
 
 float compute_weight(float grad_val, float omap_p_val, float omap_q_val, int p_label, float alpha, float betha) {
-  float weight = 0.0;
+  float weight = -1;
 
   if (omap_p_val > omap_q_val && p_label == 1) {
     weight = powf(grad_val, alpha);
@@ -46,15 +48,14 @@ float compute_weight(float grad_val, float omap_p_val, float omap_q_val, int p_l
 
 iftImage *SegmentByOrientedWatershed(iftImage *img, iftLabeledSet *seeds, iftImage *omap, float alpha, float betha)
 {
-  iftImage   *pathval = NULL, *label = NULL, *gradI=NULL, *gradO=NULL;
+  iftImage   *pathval = NULL, *label = NULL, *grad=NULL;
 
   // create images
   pathval = iftCreateImage(img->xsize, img->ysize, img->zsize);
   label = iftCreateImage(img->xsize, img->ysize, img->zsize);
 
   // compute gradients
-  gradI = compute_gradient(img, 1.5);
-  gradO = compute_gradient(omap, 1.5);
+  grad = compute_gradient(img, 1.5);
 
   for(int i = 0; i < pathval->n; i++) {
     pathval->val[i] = IFT_INFINITY_INT;
@@ -64,7 +65,7 @@ iftImage *SegmentByOrientedWatershed(iftImage *img, iftLabeledSet *seeds, iftIma
   iftLabeledSet *S = seeds;
   iftAdjRel     *A = iftSpheric(1.5);
 
-  Q = iftCreateGQueue(256, img->n, pathval->val);
+  Q = iftCreateGQueue(IFT_QSIZE, img->n, pathval->val);
   int p;
   while(S != NULL) {
     p = S->elem;
@@ -81,15 +82,16 @@ iftImage *SegmentByOrientedWatershed(iftImage *img, iftLabeledSet *seeds, iftIma
       iftVoxel v = iftGetAdjacentVoxel(A, u, i);
       int q = iftGetVoxelIndex(img, v);
 
-      float weight = alpha * gradI->val[q] + (1 - alpha) * gradO->val[q];
+      float weight = compute_weight(grad->val[p], omap->val[p], omap->val[q], label->val[p], alpha, betha);;
 
-      int temp = iftMax(pathval->val[p],iftRound(weight));
+      int temp = iftMax(pathval->val[p],iftRound(weight)); 
 
-      if (temp < pathval->val[q] && Q->L.elem[q].color != IFT_BLACK) {
+      if (temp < pathval->val[q] && (Q->L.elem[q].color != IFT_BLACK)) {
+        //printf("temp %d \n", temp);
+        if (Q->L.elem[q].color == IFT_GRAY)
+          iftRemoveGQueueElem(Q, q);
         pathval->val[q] = temp;
         label->val[q] = label->val[p];
-        //if (Q->L.elem[q].color == IFT_GRAY)
-        //  iftRemoveGQueueElem(Q, q);
         iftInsertGQueue(&Q, q);
       }
 
