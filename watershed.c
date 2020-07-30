@@ -14,10 +14,13 @@ iftImage *compute_gradient(iftImage *img, float adjacency_radius) {
 
     for( int j = 0; j < A->n; j++) {
       iftVoxel v = iftGetAdjacentVoxel(A, u, j);
-      int q = iftGetVoxelIndex(img, v);
-      float intensity_diff = img->val[i] - img->val[q];
 
-      grad_i += intensity_diff * intensity_diff;
+      if(iftValidVoxel(img, v)) {
+        int q = iftGetVoxelIndex(img, v);
+        float intensity_diff = img->val[i] - img->val[q];
+
+        grad_i += intensity_diff * intensity_diff;
+      }
 
     }
 
@@ -39,8 +42,8 @@ iftImage *SegmentByWatershed(iftImage *img, iftLabeledSet *seeds, iftImage *omap
   label = iftCreateImage(img->xsize, img->ysize, img->zsize);
 
   // compute gradients
-  gradI = compute_gradient(img, 1.5);
-  gradO = compute_gradient(omap, 1.5);
+  gradI = compute_gradient(img, 3.0);
+  gradO = compute_gradient(omap, 3.0);
 
   for(int i = 0; i < pathval->n; i++) {
     pathval->val[i] = IFT_INFINITY_INT;
@@ -67,18 +70,20 @@ iftImage *SegmentByWatershed(iftImage *img, iftLabeledSet *seeds, iftImage *omap
     u = iftGetVoxelCoord(img, p);
     for (int i = 0; i < A->n; i++) {
       v = iftGetAdjacentVoxel(A, u, i);
-      q = iftGetVoxelIndex(img, v);
+      if(iftValidVoxel(img, v)) {
+        q = iftGetVoxelIndex(img, v);
 
-      float weight = alpha * gradI->val[q] + (1 - alpha) * gradO->val[q];
+        float weight = alpha * gradI->val[q] + (1 - alpha) * gradO->val[q];
 
-      int temp = iftMax(pathval->val[p],iftRound(weight));
+        int temp = iftMax(pathval->val[p],iftRound(weight));
 
-      if (temp < pathval->val[q] && Q->L.elem[q].color != IFT_BLACK) {
-        pathval->val[q] = temp;
-        label->val[q] = label->val[p];
-        //if (Q->L.elem[q].color == IFT_GRAY)
-        //  iftRemoveGQueueElem(Q, q);
-        iftInsertGQueue(&Q, q);
+        if (temp < pathval->val[q] && Q->L.elem[q].color != IFT_BLACK) {
+          pathval->val[q] = temp;
+          label->val[q] = label->val[p];
+          //if (Q->L.elem[q].color == IFT_GRAY)
+          //  iftRemoveGQueueElem(Q, q);
+          iftInsertGQueue(&Q, q);
+        }
       }
 
     }
