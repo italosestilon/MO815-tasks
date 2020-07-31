@@ -683,7 +683,7 @@ int main(int argc, char *argv[])
   int h = 256-1;
 
   int visibility[4] = {0, 1, 1, 1};
-  float opacity[4] = {0, .8, 0.8, 0.8};
+  float opacity[4] = {0, 1, 1, 1};
 
   GraphicalContext *gc = create_graphical_context(img, label_image, alpha, beta, h, visibility, opacity);
 
@@ -692,10 +692,12 @@ int main(int argc, char *argv[])
   iftImage *slc_coronal = GetSliceCoronal(img, label_image, 120, gc);
   iftImage *slc_axial = GetSliceAxial(img, label_image, 120, gc);
 
-  //change_intesity_interval(slc_sagital, h);
+  change_intesity_interval(slc_sagital, h);
   change_intesity_interval(slc_coronal, h);
   change_intesity_interval(slc_axial, h);
   change_intesity_interval(rendering, h);
+
+   change_intesity_interval(rendering, h);
 
   iftWriteImageByExt(rendering, argv[5]);
   iftWriteImageByExt(slc_sagital, "sagital.png");

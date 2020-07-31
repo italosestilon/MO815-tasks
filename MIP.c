@@ -326,12 +326,12 @@ int main(int argc, char *argv[])
 
   iftImage *projection = surface_rendering(img, gc);
 
-  change_intesity_interval(projection, h);
 
-  iftImage *normalized =  window_level(projection, .5, .2, h);
+  iftImage *normalized =  window_level(projection, .7, .3, h);
 
   iftImage *colored = applyRainBowColorTable(normalized, h);
 
+  //change_intesity_interval(colored, h);
   iftWriteImageByExt(colored, argv[4]);
 
   iftDestroyImage(&img);

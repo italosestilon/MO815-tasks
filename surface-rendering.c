@@ -497,8 +497,8 @@ iftImage *surface_rendering(iftImage *img, iftImage *label_image, GraphicalConte
           iftColor YCbCr_color = iftRGBtoYCbCr(rgb_color, gc->r_a);
       
           projection->val[index] = iftRound(r);
-          projection->Cb[index] = YCbCr_color.val[1];
-          projection->Cr[index] = YCbCr_color.val[2];
+          projection->Cb[index] = rgb_color.val[1];
+          projection->Cr[index] = rgb_color.val[2];
 
         }
       }

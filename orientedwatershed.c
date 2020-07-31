@@ -14,10 +14,13 @@ iftImage *compute_gradient(iftImage *img, float adjacency_radius) {
 
     for( int j = 0; j < A->n; j++) {
       iftVoxel v = iftGetAdjacentVoxel(A, u, j);
-      int q = iftGetVoxelIndex(img, v);
-      float intensity_diff = img->val[i] - img->val[q];
 
-      grad_i += intensity_diff * intensity_diff;
+      if(iftValidVoxel(img, v)) {
+        int q = iftGetVoxelIndex(img, v);
+        float intensity_diff = img->val[i] - img->val[q];
+
+        grad_i += intensity_diff * intensity_diff;
+      }
 
     }
 
@@ -80,19 +83,21 @@ iftImage *SegmentByOrientedWatershed(iftImage *img, iftLabeledSet *seeds, iftIma
     iftVoxel u = iftGetVoxelCoord(img, p);
     for (int i = 0; i < A->n; i++) {
       iftVoxel v = iftGetAdjacentVoxel(A, u, i);
-      int q = iftGetVoxelIndex(img, v);
 
-      float weight = compute_weight(grad->val[p], omap->val[p], omap->val[q], label->val[p], alpha, betha);;
+      if(iftValidVoxel(img, v)) {
+        int q = iftGetVoxelIndex(img, v);
 
-      int temp = iftMax(pathval->val[p],iftRound(weight)); 
+        float weight = compute_weight(grad->val[p], omap->val[p], omap->val[q], label->val[p], alpha, betha);;
 
-      if (temp < pathval->val[q] && (Q->L.elem[q].color != IFT_BLACK)) {
-        //printf("temp %d \n", temp);
-        if (Q->L.elem[q].color == IFT_GRAY)
-          iftRemoveGQueueElem(Q, q);
-        pathval->val[q] = temp;
-        label->val[q] = label->val[p];
-        iftInsertGQueue(&Q, q);
+        int temp = iftMax(pathval->val[p],iftRound(weight)); 
+
+        if (temp < pathval->val[q] && (Q->L.elem[q].color != IFT_BLACK)) {
+          if (Q->L.elem[q].color == IFT_GRAY)
+            iftRemoveGQueueElem(Q, q);
+          pathval->val[q] = temp;
+          label->val[q] = label->val[p];
+          iftInsertGQueue(&Q, q);
+        }
       }
 
     }

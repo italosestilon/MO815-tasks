@@ -53,8 +53,8 @@ GraphicalContext *create_graphical_context(iftImage *img, float alpha, float bet
 
     gc->Tuv = iftTranslationMatrix(d);
 
-    gc->Rx = iftRotationMatrix(IFT_AXIS_X, -alpha);
-    gc->Ry = iftRotationMatrix(IFT_AXIS_Y, beta);
+    gc->Rx = iftRotationMatrix(IFT_AXIS_X, -beta);
+    gc->Ry = iftRotationMatrix(IFT_AXIS_Y, alpha);
     gc->Psi_r = iftMultMatrices(gc->Rx,gc->Ry);
 
     //iftPrintMatrix(gc->Psi_r);
@@ -99,6 +99,10 @@ void find_alpha_and_betha(iftPoint p_np, float *alpha, float *betha) {
   float y_magnitude = (sqrtf(p_np.y * p_np.y + z_*z_));
   float cos_alpha = iftAlmostZero(y_magnitude) ? 1 : (z_)/y_magnitude;
   float _alpha = acosf(cos_alpha);
+
+  /*float y_magnitude = (sqrtf(p_np.y * p_np.y + p_np.z*p_np.z));
+  float cos_alpha = iftAlmostZero(y_magnitude) ? 1 : (p_np.z)/y_magnitude;
+  float _alpha = acosf(cos_alpha);*/
 
   //convert alpha and betha to degrees
   _alpha = _alpha*180/PI;

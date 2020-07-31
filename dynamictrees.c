@@ -31,7 +31,7 @@ iftImage *SegmentByDynamicTrees(iftImage *img, iftLabeledSet *seeds, iftImage *o
   int            p, q, r;
   iftVoxel       u, v;
   iftLabeledSet *S = seeds;
-  iftAdjRel     *A = iftSpheric(1.0);
+  iftAdjRel     *A = iftSpheric(1.5);
 
   // create images
   pathval = iftCreateImage(img->xsize, img->ysize, img->zsize);
@@ -40,10 +40,8 @@ iftImage *SegmentByDynamicTrees(iftImage *img, iftLabeledSet *seeds, iftImage *o
 
   Q = iftCreateGQueue(IFT_QSIZE, img->n, pathval->val);
 
-  int num_of_seeds = iftNumberOfLabels(S);
-
-  tree_value = calloc(num_of_seeds, sizeof(float));
-  nnodes = calloc(num_of_seeds, sizeof(int));
+  tree_value = calloc(img->n, sizeof(float));
+  nnodes = calloc(img->n, sizeof(int));
 
   for(int i = 0; i < pathval->n; i++) {
     pathval->val[i] = IFT_INFINITY_INT;
@@ -55,38 +53,44 @@ iftImage *SegmentByDynamicTrees(iftImage *img, iftLabeledSet *seeds, iftImage *o
     pathval->val[p] = 0.0;
     iftInsertGQueue(&Q, p);
     S = S->next;
-    nnodes[label->val[p]] = 0;
-    tree_value[label->val[p]] = 0.0;
+    nnodes[p] = 1;
+    root->val[p] = p;
+    tree_value[p] = img->val[p];
   }
 
   while(!iftEmptyGQueue(Q)) {
     p = iftRemoveGQueue(Q);
     u = iftGetVoxelCoord(img, p);
 
-    nnodes[label->val[p]]++;
-    tree_value[label->val[p]] += img->val[p];
-
     for (int i = 0; i < A->n; i++) {
       v = iftGetAdjacentVoxel(A, u, i);
       q = iftGetVoxelIndex(img, v);
+      if(iftValidVoxel(img, v)) {
+        float mean_value = tree_value[root->val[p]]/nnodes[root->val[p]];
+        float weight = compute_weight(img->val[q], mean_value, omap->val[p], omap->val[q], label->val[p], alpha, beta);
 
-      float mean_value = tree_value[label->val[p]]/nnodes[label->val[p]];
-      float weight = compute_weight(img->val[q], mean_value, omap->val[p], omap->val[q], label->val[p], alpha, beta);
+        int temp = iftMax(pathval->val[p],iftRound(weight));
 
-      int temp = iftMax(pathval->val[p],iftRound(weight));
-
-      if (temp < pathval->val[q] && Q->L.elem[q].color != IFT_BLACK) {
-        if (Q->L.elem[q].color == IFT_GRAY)
-          iftRemoveGQueueElem(Q, q);
-    
-        pathval->val[q] = temp;
-        label->val[q] = label->val[p];
-        iftInsertGQueue(&Q, q);
+        if (temp < pathval->val[q] && Q->L.elem[q].color != IFT_BLACK) {
+          if (Q->L.elem[q].color == IFT_GRAY)
+            iftRemoveGQueueElem(Q, q);
+      
+          pathval->val[q] = temp;
+          label->val[q] = label->val[p];
+          root->val[q] = root->val[p];
+          nnodes[root->val[q]] += 1;
+          tree_value[root->val[q]] += img->val[q];
+          iftInsertGQueue(&Q, q);
+        }
       }
 
     }
   }
 
+  free(tree_value);
+  free(nnodes);
+  iftDestroyAdjRel(&A);
+  iftDestroyImage(&root);
   return (label);
 }
 
