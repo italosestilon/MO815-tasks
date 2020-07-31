@@ -654,6 +654,28 @@ GraphicalContext *create_graphical_context(iftImage *img, iftImage *label_image,
     return gc;
 }
 
+void get_param_for_visibility_and_opacity(char * _visibility, char * _opacity, int *visibility, float *opacity) {
+  visibility[0] = 0;
+  opacity[0] = 0.0;
+
+  int i = 0;
+  char *split = strtok(_visibility, ", ");
+	while(split != NULL){
+		visibility[i+1] = atoi(split);
+		split = strtok(NULL, ", ");
+    i++;
+	}
+
+  i = 0;
+  split = strtok(_opacity, ", ");
+	while(split != NULL){
+		opacity[i+1] = atof(split);
+		split = strtok(NULL, ", ");
+    i++;
+	}
+
+}
+
 int main(int argc, char *argv[]) 
 {
   timer *tstart = NULL;
@@ -661,13 +683,15 @@ int main(int argc, char *argv[])
   
   MemDinInicial = iftMemoryUsed(1);
 
-  if (argc != 6){
+  if (argc != 8){
     iftError("Usage: Surface rendering <...>\n"
 	    "[1] the name of the original scene (.scn).\n"
       "[2] the name of the label scene (.scn).\n"
       "[3] is the viewing tilt angle alhpa.\n"
       "[4] is the viewing spin angle beta. \n",
-      "[5] is the resulting rendition. \n",
+      "[5] oject opacity e.g. \"0.5, 0.5, 0.5\". \n",
+      "[6] object visibility  e.g \"0, 1, 0\". \n",
+      "[7] is the resulting rendition. \n",
       "main");
   }
 
@@ -682,8 +706,13 @@ int main(int argc, char *argv[])
   float beta = atof(argv[4]);
   int h = 256-1;
 
-  int visibility[4] = {0, 1, 1, 1};
-  float opacity[4] = {0, 1, 1, 1};
+  char *_visibility = argv[5];
+  char *_opacity = argv[6];
+
+  int visibility[4];
+  float opacity[4];
+
+  get_param_for_visibility_and_opacity(_visibility, _opacity, visibility, opacity);
 
   GraphicalContext *gc = create_graphical_context(img, label_image, alpha, beta, h, visibility, opacity);
 
@@ -697,9 +726,9 @@ int main(int argc, char *argv[])
   change_intesity_interval(slc_axial, h);
   change_intesity_interval(rendering, h);
 
-   change_intesity_interval(rendering, h);
+  //change_intesity_interval(rendering, h);
 
-  iftWriteImageByExt(rendering, argv[5]);
+  iftWriteImageByExt(rendering, argv[7]);
   iftWriteImageByExt(slc_sagital, "sagital.png");
   iftWriteImageByExt(slc_coronal, "coronal.png");
   iftWriteImageByExt(slc_axial, "axial.png");  

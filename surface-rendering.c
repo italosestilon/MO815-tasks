@@ -383,9 +383,7 @@ double phones_model(iftImage *img, iftPoint grad_pp, iftPoint np, iftPoint pp,
       float specular = tetha >= 0 && tetha < PI/4.0 ? gc->k_s * pow(cos(2*tetha), gc->n_s) : 0.0;
       r = gc->k_a*gc->r_a + r_d * (gc->k_d * cos(tetha) + specular);
     }
-    if(r < 1) {
-      printf("Oopds");
-    }
+    
     return r;
 }
 

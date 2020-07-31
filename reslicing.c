@@ -53,8 +53,8 @@ GraphicalContext *create_graphical_context(iftImage *img, float alpha, float bet
 
     gc->Tuv = iftTranslationMatrix(d);
 
-    gc->Rx = iftRotationMatrix(IFT_AXIS_X, -beta);
-    gc->Ry = iftRotationMatrix(IFT_AXIS_Y, alpha);
+    gc->Rx = iftRotationMatrix(IFT_AXIS_X, -alpha);
+    gc->Ry = iftRotationMatrix(IFT_AXIS_Y, beta);
     gc->Psi_r = iftMultMatrices(gc->Rx,gc->Ry);
 
     //iftPrintMatrix(gc->Psi_r);
@@ -92,24 +92,20 @@ void get_slice(GraphicalContext *gc,  iftImage *original_img, iftImage *resliced
 void find_alpha_and_betha(iftPoint p_np, float *alpha, float *betha) {
 
   float x_magnitude = (sqrtf(p_np.x * p_np.x + p_np.z*p_np.z));
-  float cos_betha = iftAlmostZero(x_magnitude) ? 1 : (p_np.z)/x_magnitude;
-  float _betha = acosf(cos_betha);
-
-  float z_ = p_np.x *-sinf(-_betha) + p_np.z * cosf(-_betha);
-  float y_magnitude = (sqrtf(p_np.y * p_np.y + z_*z_));
-  float cos_alpha = iftAlmostZero(y_magnitude) ? 1 : (z_)/y_magnitude;
+  float cos_alpha = iftAlmostZero(x_magnitude) ? 1 : (p_np.z)/x_magnitude;
   float _alpha = acosf(cos_alpha);
 
-  /*float y_magnitude = (sqrtf(p_np.y * p_np.y + p_np.z*p_np.z));
-  float cos_alpha = iftAlmostZero(y_magnitude) ? 1 : (p_np.z)/y_magnitude;
-  float _alpha = acosf(cos_alpha);*/
+  float z_ = p_np.x *-sinf(-_alpha) + p_np.z * cosf(-_alpha);
+  float y_magnitude = (sqrtf(p_np.y * p_np.y + z_*z_));
+  float cos_betha = iftAlmostZero(y_magnitude) ? 1 : (z_)/y_magnitude;
+  float _betha = acosf(cos_betha);
 
   //convert alpha and betha to degrees
   _alpha = _alpha*180/PI;
   _betha = _betha*180/PI;
 
   *alpha = _alpha;
-  *betha = _betha;
+  *betha = _alpha;
 }
 
 iftImage *reslice_image(GraphicalContext *gc, iftImage *img, int num_slices, iftPoint p0, iftPoint np, float lambda){
