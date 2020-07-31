@@ -275,14 +275,185 @@ Na Figura \ref{fig:sull-visao-radiologista-cores} podemos ver três fatias de um
     \label{fig:brain-visao-neurorradiologista-cores}
 \end{figure}
 
-\section{Tarefa 2}
+\section{Tarefa 2 - Maximum intensity projection}
 
-\section{Tarefa 3}
+\begin{figure}[H]
+    \centering
+    \begin{subfigure}[b]{0.3\textwidth}
+        \includegraphics[width=\textwidth]{figures/mip/mip-brain.png}
+        \caption{Cérebro.}
+    \end{subfigure}
+    ~
+    \begin{subfigure}[b]{0.3\textwidth}
+        \includegraphics[width=\textwidth]{figures/mip/mip-skull.png}
+        \caption{Crânio.}
+    \end{subfigure}
+    ~
+    \begin{subfigure}[b]{0.3\textwidth}
+        \includegraphics[width=\textwidth]{figures/mip/mip-thorax.png}
+        \caption{Axial cinza.}
+    \end{subfigure}
 
-\section{Tarefa 4}
+    \caption{Maximum intensity projection.}
+    \label{fig:mip}
+\end{figure}
 
-\section{Tarefa 5}
+\section{Tarefa 3 - Reslicing}
 
-\section{Tarefa 6}
+\begin{figure}[H]
+    \centering
+    \begin{subfigure}[b]{0.3\textwidth}
+        \includegraphics[width=\textwidth]{figures/reslicing/axial-gray.png}
+        \caption{Visão axial.}
+    \end{subfigure}
+    ~
+    \begin{subfigure}[b]{0.3\textwidth}
+        \includegraphics[width=\textwidth]{figures/reslicing/coronal-gray.png}
+        \caption{Visão coronal.}
+    \end{subfigure}
+    ~
+    \begin{subfigure}[b]{0.3\textwidth}
+        \includegraphics[width=\textwidth]{figures/reslicing/sagital-gray.png}
+        \caption{Visão sagital.}
+    \end{subfigure}
+
+    \caption{Maximum intensity projection.}
+    \label{fig:mip}
+\end{figure}
+
+\section{Tarefa 4 - Segmentação}
+
+\begin{figure}[H]
+    \centering
+    \begin{subfigure}[b]{0.3\textwidth}
+        \includegraphics[width=\textwidth]{figures/segm/w-segmented-thorax-axial.png}
+        \caption{Visão axial.}
+    \end{subfigure}
+    ~
+    \begin{subfigure}[b]{0.3\textwidth}
+        \includegraphics[width=\textwidth]{figures/segm/w-segmented-thorax-coronal.png}
+        \caption{Visão coronal.}
+    \end{subfigure}
+    ~
+    \begin{subfigure}[b]{0.3\textwidth}
+        \includegraphics[width=\textwidth]{figures/segm/w-segmented-thorax-sagital.png}
+        \caption{Visão sagital.}
+    \end{subfigure}
+
+    \caption{Watershed.}
+    \label{fig:watershed}
+\end{figure}
+
+
+\begin{figure}[H]
+    \centering
+    \begin{subfigure}[b]{0.3\textwidth}
+        \includegraphics[width=\textwidth]{figures/segm/ow-segmented-thorax-axial.png}
+        \caption{Visão axial.}
+    \end{subfigure}
+    ~
+    \begin{subfigure}[b]{0.3\textwidth}
+        \includegraphics[width=\textwidth]{figures/segm/ow-segmented-thorax-coronal.png}
+        \caption{Visão coronal.}
+    \end{subfigure}
+    ~
+    \begin{subfigure}[b]{0.3\textwidth}
+        \includegraphics[width=\textwidth]{figures/segm/ow-segmented-thorax-sagital.png}
+        \caption{Visão sagital.}
+    \end{subfigure}
+
+    \caption{Watershed orientado.}
+    \label{fig:o-watershed}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \begin{subfigure}[b]{0.3\textwidth}
+        \includegraphics[width=\textwidth]{figures/segm/d-segmented-thorax-axial.png}
+        \caption{Visão axial.}
+    \end{subfigure}
+    ~
+    \begin{subfigure}[b]{0.3\textwidth}
+        \includegraphics[width=\textwidth]{figures/segm/d-segmented-thorax-coronal.png}
+        \caption{Visão coronal.}
+    \end{subfigure}
+    ~
+    \begin{subfigure}[b]{0.3\textwidth}
+        \includegraphics[width=\textwidth]{figures/segm/d-segmented-thorax-sagital.png}
+        \caption{Visão sagital.}
+    \end{subfigure}
+
+    \caption{Dynamic trees.}
+    \label{fig:dynamic}
+\end{figure}
+
+\section{Tarefa 5 - Surface rendering}
+
+\begin{figure}[H]
+    \centering
+    \begin{subfigure}[b]{0.45\textwidth}
+        \includegraphics[width=\textwidth]{figures/surface/surface_rendering_brain_0_0.png}
+    \end{subfigure}
+    ~
+    \begin{subfigure}[b]{0.45\textwidth}
+        \includegraphics[width=\textwidth]{figures/surface/surface_rendering_brain_90_90.png}
+    \end{subfigure}
+    \\
+    \begin{subfigure}[b]{0.45\textwidth}
+        \includegraphics[width=\textwidth]{figures/surface/surface_rendering_brain_180_0.png}
+    \end{subfigure}
+    ~
+    \begin{subfigure}[b]{0.45\textwidth}
+        \includegraphics[width=\textwidth]{figures/surface/surface_rendering_brain_90_0.png}
+    \end{subfigure}
+
+    \caption{Dynamic trees.}
+    \label{fig:surface}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \begin{subfigure}[b]{0.3\textwidth}
+        \includegraphics[width=\textwidth]{figures/surface/axial.png}
+        \caption{Visão axial.}
+    \end{subfigure}
+    ~
+    \begin{subfigure}[b]{0.3\textwidth}
+        \includegraphics[width=\textwidth]{figures/surface/coronal.png}
+        \caption{Visão coronal.}
+    \end{subfigure}
+    ~
+    \begin{subfigure}[b]{0.3\textwidth}
+        \includegraphics[width=\textwidth]{figures/surface/sagital.png}
+        \caption{Visão sagital.}
+    \end{subfigure}
+
+    \caption{Dynamic trees.}
+    \label{fig:dynamic}
+\end{figure}
+
+\section{Tarefa 6 - Surface rendering com transparência}
+
+\begin{figure}[H]
+    \centering
+    \begin{subfigure}[b]{0.45\textwidth}
+        \includegraphics[width=\textwidth]{figures/t-surface/t_surface_rendering_brain_0_0.png}
+    \end{subfigure}
+    ~
+    \begin{subfigure}[b]{0.45\textwidth}
+        \includegraphics[width=\textwidth]{figures/t-surface/t_surface_rendering_brain_90_90.png}
+    \end{subfigure}
+    \\
+    \begin{subfigure}[b]{0.45\textwidth}
+        \includegraphics[width=\textwidth]{figures/t-surface/t_surface_rendering_brain_180_0.png}
+    \end{subfigure}
+    ~
+    \begin{subfigure}[b]{0.45\textwidth}
+        \includegraphics[width=\textwidth]{figures/t-surface/t_surface_rendering_brain_90_0.png}
+    \end{subfigure}
+
+    \caption{Dynamic trees.}
+    \label{fig:t-surface}
+\end{figure}
 
 \end{document}
